@@ -150,7 +150,7 @@ videoClose?.addEventListener('click',closeVideo);
 videoDialog?.addEventListener('click',event=>{if(event.target===videoDialog)closeVideo()});
 videoDialog?.addEventListener('close',()=>videoFrame?.replaceChildren());
 
-const revealTargets=document.querySelectorAll('.section-heading, .skill-card, .lab-copy, .flow-card, .portfolio-feature, .portfolio-subhead, .archive-grid figure, .motion-strip, .contact > *');
+const revealTargets=document.querySelectorAll('.section-heading, .skill-card, .lab-copy, .flow-card, .system-card, .portfolio-feature, .portfolio-subhead, .archive-grid figure, .motion-strip, .contact > *');
 if(!reduceMotion.matches&&'IntersectionObserver' in window){
   revealTargets.forEach((item,index)=>{
     item.classList.add('reveal-item');

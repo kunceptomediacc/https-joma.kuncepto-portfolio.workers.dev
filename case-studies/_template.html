@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!--
+    PHASE 6 CASE-STUDY TEMPLATE
+    1. Copy this file and rename it to your experiment slug (lowercase-with-hyphens).
+    2. Fill every [bracketed placeholder] and delete the guidance comments as you go.
+    3. The leading underscore keeps this file out of the build — it never deploys.
+  -->
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0c0f">
+  <meta name="author" content="Joma Echavez">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_PH">
+  <meta property="og:site_name" content="Kuncepto">
+  <meta property="og:title" content="[Project name] — Case study | Joma Echavez">
+  <meta property="og:description" content="[One sentence: what the system does, end to end.]">
+  <meta property="og:url" content="https://joma.kuncepto-portfolio.workers.dev/case-studies/[slug].html">
+  <meta property="og:image" content="https://joma.kuncepto-portfolio.workers.dev/og-joma-avatar.png">
+  <title>[Project name] — Case study | Joma Echavez</title>
+  <link rel="canonical" href="https://joma.kuncepto-portfolio.workers.dev/case-studies/[slug].html">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="stylesheet" href="../style.css?v=20260907a">
+  <link rel="stylesheet" href="../hero.css?v=20260907d">
+  <link rel="stylesheet" href="../reference-style.css?v=20260907e">
+  <link rel="stylesheet" href="case-studies.css?v=20260907a">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../index.html#top" aria-label="Kuncepto by Joma Echavez — home">
+      <img src="../assets/img/logo.webp" alt="Kuncepto" width="1916" height="657" decoding="async">
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Primary navigation">
+      <a href="../index.html#skills">Skills</a><a href="../index.html#lab">Automation Lab</a><a href="../index.html#portfolio">Portfolio</a><a class="nav-cta" href="../index.html#contact-form">Request CV</a>
+    </nav>
+  </header>
+
+  <main id="main" class="case-study">
+    <div class="case-head">
+      <p class="case-eyebrow">Case study · [2026] · [Self-hosted / Cloud / Hybrid]</p>
+      <h1 class="case-title">[Result-first headline — what the system does, end to end.]</h1>
+      <p class="case-lead">[2–3 sentences: the problem, the system you built, the tools involved, and why it was worth building.]</p>
+      <div class="case-tags"><span>[Tool]</span><span>[Tool]</span><span>[Tool]</span><span>[Concept]</span></div>
+      <p class="case-doc-note"><strong>Hands-on personal project.</strong> Self-study, not paid client work. [One line: what this build taught you.]</p>
+    </div>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>01</b><span>Business problem</span></h2>
+      <div class="cs-body">
+        <p>[What was slow, manual, broken, or impossible before this system existed? One concrete scenario.]</p>
+        <p>[Why the obvious single-purpose fix was not enough — what needed to be reusable.]</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>02</b><span>Goal &amp; acceptance criteria</span></h2>
+      <div class="cs-body">
+        <p>Goal: [one sentence describing the finish line].</p>
+        <ul>
+          <li>[Criterion 1 — observable and testable.]</li>
+          <li>[Criterion 2.]</li>
+          <li>[Failure behavior: what a failed run must and must not do.]</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>03</b><span>Workflow diagram</span></h2>
+      <div class="cs-body">
+        <div class="cs-grid">
+          <figure><img src="../assets/portfolio/[screenshot-1].webp" alt="[Describe what the screenshot shows]" loading="lazy" decoding="async"><figcaption>[Stage name]</figcaption></figure>
+          <figure><img src="../assets/portfolio/[screenshot-2].webp" alt="[Describe what the screenshot shows]" loading="lazy" decoding="async"><figcaption>[Stage name]</figcaption></figure>
+          <figure class="cs-wide"><img src="../assets/portfolio/[proof-shot].webp" alt="[Code, logs, or result evidence]" loading="lazy" decoding="async"><figcaption>[Proof shot]</figcaption></figure>
+        </div>
+        <p class="cs-lead">[Trigger] → [Stage A] → [Stage B] → [Stage C] → [Output]</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>04</b><span>Input payload (JSON)</span></h2>
+      <div class="cs-body">
+        <p>[What the entry point receives and why it is shaped this way.]</p>
+        <pre class="cs-code"><code>{
+  "[field]": "[example value]",
+  "[field]": "[example value]"
+}</code></pre>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>05</b><span>Node-by-node data flow</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Node</th><th>Role</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>[Node]</td><td>[Role]</td><td>[What it receives, decides, and passes on.]</td></tr>
+            <tr><td>[Node]</td><td>[Role]</td><td>[Detail.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>06</b><span>Credentials &amp; authentication</span></h2>
+      <div class="cs-body">
+        <div class="cs-cols">
+          <div><h4>[Service]</h4><p>[Auth method. Keys stay in .env / .dev.vars — never committed.]</p></div>
+          <div><h4>Secrets hygiene</h4><p>[What is git-ignored and why.]</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>07</b><span>API details</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Call</th><th>Method</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>[Endpoint]</td><td>[POST]</td><td>[Payload shape, rate limits, retries, error surface.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>08</b><span>Transformations &amp; normalization</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Field</th><th>Raw form</th><th>Normalized form</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>[field]</td><td>[raw]</td><td>[clean]</td><td>[What broke without this.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>09</b><span>Expected output</span></h2>
+      <div class="cs-body">
+        <p>[The exact shape a successful run produces — the contract downstream consumers can rely on.]</p>
+        <pre class="cs-code"><code>{
+  "[field]": "[normalized value]",
+  "status": "[stored status]"
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>10</b><span>Deliberate failure tests</span></h2>
+      <div class="cs-body">
+        <p>[How you planned to break it before trusting it — every test and its expected outcome.]</p>
+        <table class="cs-table">
+          <thead><tr><th>Test</th><th>Injected condition</th><th>Expected behavior</th><th>Outcome</th></tr></thead>
+          <tbody>
+            <tr><td>T1</td><td>[Condition]</td><td>[Behavior]</td><td><span class="cs-outcome-pass">pass</span></td></tr>
+            <tr><td>T2</td><td>[Condition]</td><td>[Behavior]</td><td><span class="cs-outcome-pass">pass</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>11</b><span>What actually broke</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>ID</th><th>Where</th><th>What happened</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>[Node/step]</td><td>[The real error or wrong output, as observed.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>12</b><span>Root causes</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>ID</th><th>Root cause</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>[The actual reason — not the symptom.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>13</b><span>Fixes &amp; why they work</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>ID</th><th>Fix</th><th>Why it works</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>[The change made.]</td><td>[The mechanism that makes it durable, not a patch.]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>14</b><span>Final workflow &amp; stable state</span></h2>
+      <div class="cs-body">
+        <p>[What the system looks like after the fixes — the boring, dependable version.]</p>
+        <ul>
+          <li>[Stable behavior 1 — <span class="cs-outcome-fixed">fixed</span> in v[N].]</li>
+          <li>[Measured result: runs completed, outputs normalized, etc.]</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>15</b><span>Lessons learned</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li>[A transferable lesson — what you now do differently on every build.]</li>
+          <li>[What the failures taught that the successes could not.]</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>16</b><span>Next version</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li>[The next concrete upgrade — tool, capability, or guardrail.]</li>
+          <li>[How this experiment feeds the next one in the lab progression.]</li>
+        </ul>
+      </div>
+    </section>
+
+    <a class="cs-back" href="../index.html#portfolio">← Back to portfolio</a>
+  </main>
+</body>
+</html>

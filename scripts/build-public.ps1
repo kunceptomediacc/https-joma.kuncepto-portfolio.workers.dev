@@ -40,4 +40,13 @@ Copy-Item -Path (Join-Path $projectRoot 'assets\portfolio\*.webp') -Destination 
 Copy-Item -Path (Join-Path $projectRoot 'assets\portfolio\*.png') -Destination $portfolioTarget
 Copy-Item -Path (Join-Path $projectRoot 'assets\portfolio\*.mp4') -Destination $portfolioTarget
 
+$caseStudiesTarget = Join-Path $resolvedPublic 'case-studies'
+New-Item -ItemType Directory -Force -Path $caseStudiesTarget | Out-Null
+# Phase 6: helper files (_template.html, README.md) stay out of the deploy
+$caseStudyFiles = Get-ChildItem -LiteralPath (Join-Path $projectRoot 'case-studies') -File |
+  Where-Object { $_.Name -notlike '_*' -and $_.Name -notin @('README.md') }
+foreach ($csFile in $caseStudyFiles) {
+  Copy-Item -LiteralPath $csFile.FullName -Destination $caseStudiesTarget
+}
+
 Write-Output "Prepared public deployment files in $resolvedPublic"

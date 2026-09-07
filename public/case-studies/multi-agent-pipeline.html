@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Case study: a self-hosted multi-agent pipeline built with n8n and local AI. Webhook in, reviewed structured result out — documented following the full build→break→debug→learn cycle.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#0b0c0f">
+  <meta name="author" content="Joma Echavez">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_PH">
+  <meta property="og:site_name" content="Kuncepto">
+  <meta property="og:title" content="Multi-agent pipeline — Case study | Joma Echavez">
+  <meta property="og:description" content="A self-hosted n8n multi-agent pipeline with local AI: one webhook in, a reviewed, structured result out — documented from business problem to next version.">
+  <meta property="og:url" content="https://joma.kuncepto-portfolio.workers.dev/case-studies/multi-agent-pipeline.html">
+  <meta property="og:image" content="https://joma.kuncepto-portfolio.workers.dev/og-joma-avatar.png">
+  <title>Multi-agent pipeline — Case study | Joma Echavez</title>
+  <link rel="canonical" href="https://joma.kuncepto-portfolio.workers.dev/case-studies/multi-agent-pipeline.html">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="stylesheet" href="../style.css?v=20260907a">
+  <link rel="stylesheet" href="../hero.css?v=20260907d">
+  <link rel="stylesheet" href="../reference-style.css?v=20260907e">
+  <link rel="stylesheet" href="case-studies.css?v=20260907a">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../index.html#top" aria-label="Kuncepto by Joma Echavez — home">
+      <img src="../assets/img/logo.webp" alt="Kuncepto" width="1916" height="657" decoding="async">
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Primary navigation">
+      <a href="../index.html#skills">Skills</a><a href="../index.html#lab">Automation Lab</a><a href="../index.html#portfolio">Portfolio</a><a class="nav-cta" href="../index.html#contact-form">Request CV</a>
+    </nav>
+  </header>
+
+  <main id="main" class="case-study">
+    <div class="case-head">
+      <p class="case-eyebrow">Case study · 2026 · Self-hosted</p>
+      <h1 class="case-title">A multi-agent pipeline: one webhook in, a reviewed, stored result out.</h1>
+      <p class="case-lead">A self-hosted n8n system that turns a raw request into a chain of specialist AI agents — Analyzer, Planner, Developer — running against local language models, with Codex-assisted implementation and normalized results written back to Google Sheets. Every stage was built, broken, debugged, and rebuilt.</p>
+      <div class="case-tags"><span>n8n</span><span>Ollama</span><span>Docker</span><span>Google Sheets</span><span>Codex</span><span>Local-first</span><span>Python</span></div>
+      <p class="case-doc-note"><strong>Hands-on personal project.</strong> This is self-study, not paid client work. It documents how I turn a business objective into a working system — and how the failures taught more than the successes.</p>
+    </div>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>01</b><span>Business problem</span></h2>
+      <div class="cs-body">
+        <p>A single-purpose automation solves exactly one task. Whenever a new task arrived — classify a message, draft a reply, summarize a document, suggest a next step — the fix was to hand-build another isolated workflow. That approach scales poorly: logic duplications, inconsistent outputs, no shared memory between steps, and nothing reusable across requests.</p>
+        <p>I needed a <strong>reusable pipeline</strong> that could accept any request, split the work across specialized agents, produce a structured result, and store it — without a cloud lock-in or sending business data to a third-party API.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>02</b><span>Goal &amp; acceptance criteria</span></h2>
+      <div class="cs-body">
+        <p>Goal: one authenticated webhook accepts a request and returns a validated, structured result with minimal human effort.</p>
+        <ul>
+          <li>A single POST webhook is the only entry point.</li>
+          <li>Each task is routed to a specialized agent (Analyzer, Planner, Developer).</li>
+          <li>Results are normalized to a consistent schema before storage.</li>
+          <li>Every run is appended as a row to Google Sheets, ready for human review.</li>
+          <li>A failed run must not silently corrupt stored data — it is marked and recoverable.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>03</b><span>Workflow diagram</span></h2>
+      <div class="cs-body">
+        <div class="cs-grid">
+          <figure><img src="../assets/portfolio/n8n-orchestrator.webp" alt="n8n Orchestrator workflow connecting a webhook, agent trigger, and response" loading="lazy" decoding="async"><figcaption>Orchestrator</figcaption></figure>
+          <figure><img src="../assets/portfolio/n8n-analyzer.webp" alt="n8n Analyzer workflow calling a local Ollama wrapper and the Planner" loading="lazy" decoding="async"><figcaption>Analyzer</figcaption></figure>
+          <figure><img src="../assets/portfolio/n8n-planner.webp" alt="n8n Planner workflow calling a local Ollama wrapper and the Developer" loading="lazy" decoding="async"><figcaption>Planner</figcaption></figure>
+          <figure><img src="../assets/portfolio/n8n-developer.webp" alt="n8n Developer workflow normalizing output and appending it to Google Sheets" loading="lazy" decoding="async"><figcaption>Developer</figcaption></figure>
+          <figure class="cs-wide"><img src="../assets/portfolio/codex-agent-code.webp" alt="Sanitized Python code from the local Ollama agent wrapper, inspected and refined with Codex" loading="lazy" decoding="async"><figcaption>Codex-assisted implementation</figcaption></figure>
+        </div>
+        <p class="cs-lead">Webhook → Orchestrator → Analyzer → Planner → Developer → Normalizer → Google Sheets</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>04</b><span>Input payload (JSON)</span></h2>
+      <div class="cs-body">
+        <p>The webhook expects a compact, JSON body. Factoring the request this way keeps every downstream agent working from the same shape.</p>
+        <pre class="cs-code"><code>{
+  "source": "webhook",
+  "request_id": "req_2026_0917",
+  "action": "summarize_and_classify",
+  "payload": {
+    "text": "Customer asks how to automate invoice arrivals and route them to accounting.",
+    "entity": "support_team"
+  },
+  "expected": "structured_summary"
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>05</b><span>Node-by-node data flow</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Node</th><th>Role</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>Webhook</td><td>Entry point</td><td>Authenticates the POST, then passes request_id + payload downstream.</td></tr>
+            <tr><td>Orchestrator</td><td>Router</td><td>Reads <code>action</code>, selects the agent sequence, and tracks the run's state.</td></tr>
+            <tr><td>Analyzer</td><td>Intent parsing</td><td>Calls the local Ollama wrapper to extract intent, entities, and the expected output shape.</td></tr>
+            <tr><td>Planner</td><td>Task planning</td><td>Turns the analyzed object into a step list plus its own validation plan.</td></tr>
+            <tr><td>Developer</td><td>Generation</td><td>Executes the planned generation and returns a draft; reusable parts are refined with Codex.</td></tr>
+            <tr><td>Normalizer</td><td>Enforcement</td><td>Enforces the schema: strips markdown, coerces types, fills defaults, flags gaps.</td></tr>
+            <tr><td>Google Sheets</td><td>Storage</td><td>Appends one row per run with a status column reserved for human review.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>06</b><span>Credentials &amp; authentication</span></h2>
+      <div class="cs-body">
+        <div class="cs-cols">
+          <div><h4>Local AI</h4><p>Ollama runs on localhost — no account, no third-party keys, and no business data leaving the machine.</p></div>
+          <div><h4>Webhook</h4><p>Requests are authenticated with a random token kept in environment variables (<code>.env</code> / <code>.dev.vars</code>), never committed.</p></div>
+          <div><h4>Google Sheets</h4><p>A scoped service-account key (also env-only) with write access to exactly one worksheet.</p></div>
+          <div><h4>Secrets hygiene</h4><p><code>.env</code>, <code>.dev.vars</code>, and generated keys are git-ignored in both the n8n and the local-wrapper projects.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>07</b><span>API details</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Interface</th><th>Call</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>n8n Webhook</td><td><code>POST /webhook/ingest</code></td><td>Header-token auth; returns the run's request_id immediately.</td></tr>
+            <tr><td>Ollama</td><td><code>POST localhost:11434/api/generate</code></td><td>Streaming off; model, prompt, and options supplied per agent call.</td></tr>
+            <tr><td>Ollama wrapper</td><td>Python, <code>requests</code></td><td>Retries with backoff; extracts and JSON-parses the model reply.</td></tr>
+            <tr><td>Google Sheets API v4</td><td><code>values:append</code></td><td>One row per run with <code>INSERT_DATA_OPTION</code> to avoid duplicate headers.</td></tr>
+          </tbody>
+        </table>
+        <p>All generated credentials are stored in environment variables, and the wrapper reads them at start — never from source files.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>08</b><span>Transformations</span></h2>
+      <div class="cs-body">
+        <p>Three transformations happen between nodes; each one was added after a real failure (see sections 11–13).</p>
+        <ul>
+          <li><strong>Analyzer normalize:</strong> free-text prompt → <code>intent</code>, <code>entity</code>, <code>expected_output</code> as typed fields.</li>
+          <li><strong>Markdown strip:</strong> model replies often arrive in <code>```json</code> fences — the wrapper strips fences before parsing so the next node receives plain JSON.</li>
+          <li><strong>Row normalizer:</strong> values are trimmed and type-coerced to match the sheet's columns exactly, with defaults for missing fields and a status column (<code>approved</code> / <code>needs_review</code> / <code>failed</code>).</li>
+        </ul>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>09</b><span>Expected output</span></h2>
+      <div class="cs-body">
+        <p>A single, complete run appends one row. The JSON passed between agents looks like this:</p>
+        <pre class="cs-code"><code>{
+  "request_id": "req_2026_0917",
+  "summary": "Route invoice arrivals to accounting and set up automated parsing.",
+  "category": "automation",
+  "confidence": 0.92,
+  "agent_path": ["analyzer", "planner", "developer"],
+  "status": "approved",
+  "stored_at": "2026-09-17T10:04:22+08:00"
+}</code></pre>
+        <p>In the sheet, that becomes a single row: <code>request_id · summary · category · confidence · agent_path · status · stored_at</code>.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>10</b><span>Deliberate failure tests</span></h2>
+      <div class="cs-body">
+        <p>Before trusting the system, I broke it on purpose — one input class at a time. The table records each test, the expectation, and the observed result.</p>
+        <table class="cs-table">
+          <thead><tr><th>Test</th><th>What should happen</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Malformed JSON body</td><td>Rejected with a clear 4xx and an error message</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Missing <code>action</code></td><td>Defaults to <code>summarize</code> and flags the run</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Empty <code>payload.text</code></td><td>Short-circuits to status <code>skipped</code>, no agent calls</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Wrong Ollama model name</td><td>Clear error surfaced, run marked <code>failed</code></td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Ollama service down</td><td>Retries with backoff, then fail-safe row</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Revoked Sheets token</td><td>Error trapped; run recorded with a retry flag</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Duplicate <code>request_id</code></td><td>Idempotency guard returns the existing row</td><td class="cs-outcome-pass">Pass</td></tr>
+          </tbody>
+        </table>
+        <p>The deliberate failures that <em>did</em> leak through became the debugging stories in the next section.</p>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>11</b><span>Actual errors</span></h2>
+      <div class="cs-body">
+        <p>These are the failures that escaped the planned tests. Each one was captured from the run log — the raw text is abbreviated, but every entry below is a real failure class I hit.</p>
+        <table class="cs-table">
+          <thead><tr><th>#</th><th>Observed error</th><th>Where it surfaced</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>Quotes / newlines in the request broke the prompt before it reached the model</td><td>Wrapper → Ollama call</td></tr>
+            <tr><td>E2</td><td>Row rejected by Sheets: value count did not match the column count</td><td>Google Sheets append</td></tr>
+            <tr><td>E3</td><td>The model wrapped its reply in <code>```json</code> fences; the next node failed to parse</td><td>Analyzer → Planner boundary</td></tr>
+            <tr><td>E4</td><td>Webhook timed out on a long first generation (cold model load)</td><td>n8n Webhook response</td></tr>
+            <tr><td>E5</td><td>Output looked correct, but the stored row carried the wrong <code>action</code> field</td><td>Normalizer → Sheets</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>12</b><span>Root cause</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Error</th><th>Root cause</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>User-supplied text was interpolated into the prompt string without escaping — classic injection surface.</td></tr>
+            <tr><td>E2</td><td>One agent had written a value containing a newline, producing an extra physical row.</td></tr>
+            <tr><td>E3</td><td>The wrapper parsed the raw completion instead of extracting the fenced content first.</td></tr>
+            <tr><td>E4</td><td>The webhook timeout was shorter than cold-start inference on a local model.</td></tr>
+            <tr><td>E5</td><td>The analysis output placed <code>action</code> in a display field and a label in the schema field — the mapping was off by one.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>13</b><span>Fix and why it works</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Fix</th><th>Why it works</th></tr></thead>
+          <tbody>
+            <tr><td>Pass the payload as a JSON string, not a raw interpolated prompt</td><td class="cs-outcome-fixed">Eliminates quote/newline injection — the model receives one unambiguous JSON document.</td></tr>
+            <tr><td>Sanitize values for newlines and normalize cell counts before append</td><td class="cs-outcome-fixed">Every run writes exactly one row: columns and cells always line up.</td></tr>
+            <tr><td>Strip markdown fences before JSON parsing</td><td class="cs-outcome-fixed">Downstream nodes always receive clean, parseable JSON.</td></tr>
+            <tr><td>Move the webhook to the worker pattern + raise the timeout, add retry with backoff</td><td class="cs-outcome-fixed">The client gets an instant <code>request_id</code>; long generations run safely in the background.</td></tr>
+            <tr><td>Validate the field mapping in the normalizer with a fixed column map</td><td class="cs-outcome-fixed">Schema columns and agent fields are now bound by one explicit map — no off-by-one guesses.</td></tr>
+          </tbody>
+        </table>
+        <p>The state of the system after these fixes is the version captured in the screenshots: stable enough to record <strong>10 normalized results</strong> in the lab.</p>
+      </div>
+    </section>
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>14</b><span>Final workflow</span></h2>
+      <div class="cs-body">
+        <p>After fixes E1–E5, the pipeline is: <strong>Webhook → Orchestrator → Analyzer → Planner → Developer → Normalizer → Google Sheets</strong>, with the local Ollama wrapper at every model call and Codex used to inspect and refine the wrapper's generated Python.</p>
+        <p>It is deliberately boring by design — a fixed schema, explicit column map, idempotency guard, and status flags. That boring-ness is what makes it trustworthy enough to leave running.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>15</b><span>Lessons learned</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li><strong>Valid workflow JSON is not automatically a correct business automation.</strong> The flow can be structurally perfect and still deliver the wrong field, the wrong row, or a silent failure.</li>
+          <li><strong>Design the human step in from the start.</strong> A status column and a review path cost minutes at build time and save hours of cleanup later.</li>
+          <li><strong>Specialize the agents.</strong> Small, single-purpose agents with typed intermediate objects are easier to test, debug, and reuse than one giant prompt.</li>
+          <li><strong>Local-first is a feature.</strong> Running Ollama locally means no per-token cost and no business data leaving the machine — a real advantage to sell.</li>
+          <li><strong>Document the failures.</strong> The five errors above are now the project's best asset: they show exactly what "debugging" means in practice.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>16</b><span>Next version</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li>Add <strong>MCP tool connections</strong> so agents can act on external tools, not just reason about them.</li>
+          <li>Add <strong>persistent memory</strong> per request_id across runs (the conference-style memory model, applied here).</li>
+          <li>Add an <strong>approval checkpoint</strong> step where a human can approve, edit, or reject before anything is executed.</li>
+          <li>Add a <strong>RAG knowledge base</strong> so agents answer against project documentation instead of general knowledge.</li>
+          <li>Expose a small <strong>run dashboard</strong> over the sheet so status, errors, and retries are visible at a glance.</li>
+        </ul>
+      </div>
+    </section>
+
+    <a class="cs-back" href="../index.html#portfolio">← Back to portfolio</a>
+  </main>
+  <footer>
+    <span>© 2026 Joma Echavez / Kuncepto</span>
+    <span>Designed from the Kuncepto archive</span>
+  </footer>
+  <script src="../script.js?v=20260907a" defer></script>
+</body>
+</html>

@@ -182,7 +182,7 @@ async function createContact(request, env) {
   if (name.length < 2 || name.length > 100) {
     return json({ ok: false, field: "sender_name", message: "Please enter your name." }, 422);
   }
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email.length > 254 || !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
     return json({ ok: false, field: "sender_email", message: "Please enter a valid email address." }, 422);
   }
   if (message.length < 10 || message.length > 2000) {
@@ -214,9 +214,27 @@ async function createContact(request, env) {
 
 async function siteVisits(request, env) {
   if (request.method === "POST") {
-    await env.DB.prepare(
-      "INSERT INTO site_metrics (metric, value, updated_at) VALUES ('portfolio_visits', 1, datetime('now')) ON CONFLICT(metric) DO UPDATE SET value = value + 1, updated_at = datetime('now')"
-    ).run();
+    let shouldCount = true;
+    try {
+      const sourceHash = await hashSource(request, env.CONTACT_HASH_SALT);
+      const recent = await env.DB.prepare(
+        "SELECT 1 AS hit FROM visit_rate WHERE source_hash = ?1 AND last_hit >= datetime('now', '-1 hour')"
+      ).bind(sourceHash).first();
+      if (recent) {
+        shouldCount = false;
+      } else {
+        await env.DB.prepare(
+          "INSERT INTO visit_rate (source_hash, last_hit) VALUES (?1, datetime('now')) ON CONFLICT(source_hash) DO UPDATE SET last_hit = datetime('now')"
+        ).bind(sourceHash).run();
+      }
+    } catch {
+      // visit_rate table not migrated yet — fall back to counting rather than breaking the counter.
+    }
+    if (shouldCount) {
+      await env.DB.prepare(
+        "INSERT INTO site_metrics (metric, value, updated_at) VALUES ('portfolio_visits', 1, datetime('now')) ON CONFLICT(metric) DO UPDATE SET value = value + 1, updated_at = datetime('now')"
+      ).run();
+    }
   } else if (request.method !== "GET") {
     return json({ ok: false, message: "Method not allowed." }, 405, { allow: "GET, POST" });
   }
@@ -247,8 +265,10 @@ export default {
     headers.set("x-content-type-options", "nosniff");
     headers.set("referrer-policy", "strict-origin-when-cross-origin");
     headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
-    headers.set("content-security-policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests");
+    headers.set("content-security-policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-src https://player.vimeo.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests");
     headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
+    headers.set("cross-origin-opener-policy", "same-origin");
+    headers.set("cross-origin-resource-policy", "same-origin");
     return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
   },
 };
