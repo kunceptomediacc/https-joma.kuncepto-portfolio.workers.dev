@@ -1,0 +1,15 @@
+{
+  "name": "kuncepto-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Joma Echavez portfolio and future Cloudflare backend",
+  "scripts": {
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-public.ps1",
+    "preview:cloudflare": "npm run build && wrangler dev",
+    "predeploy": "npm run build",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.34.0"
+  }
+}
