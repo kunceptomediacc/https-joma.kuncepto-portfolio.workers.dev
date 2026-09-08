@@ -384,12 +384,15 @@ async function siteChat(request, env) {
       signal: AbortSignal.timeout(25000),
     });
     const data = await response.json();
-    if (!response.ok || !data || typeof data.answer !== "string" || !data.answer.trim()) {
+    const replyText = typeof data?.reply === "string" && data.reply.trim()
+      ? data.reply
+      : (typeof data?.answer === "string" ? data.answer : "");
+    if (!response.ok || !replyText.trim()) {
       throw new Error("Invalid chat response.");
     }
     return json({
       ok: true,
-      answer: data.answer.trim().slice(0, 4000),
+      answer: replyText.trim().slice(0, 4000),
       sources: Array.isArray(data.sources) ? data.sources.slice(0, 5) : [],
       sessionId,
     });
