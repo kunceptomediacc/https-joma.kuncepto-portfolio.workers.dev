@@ -26,8 +26,8 @@
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="preload" as="image" href="assets/img/hero-cutout.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="style.css?v=20260829c">
-  <link rel="stylesheet" href="hero.css?v=20260907d">
-  <link rel="stylesheet" href="reference-style.css?v=20260907e">
+  <link rel="stylesheet" href="hero.css?v=20260908a">
+  <link rel="stylesheet" href="reference-style.css?v=20260908a">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -47,7 +47,7 @@
     </a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
     <nav id="nav" aria-label="Primary navigation">
-      <a href="#skills">Skills</a><a href="#lab">Automation Lab</a><a href="#portfolio">Portfolio</a><a href="#design-archive">Design Archive</a><a class="nav-cta" id="request-cv" href="#contact-form" aria-haspopup="dialog">Request CV</a>
+      <a href="#skills">Skills</a><a href="#lab">Automation Lab</a><a href="#portfolio">Portfolio</a><a href="#design-archive">Design Archive</a><a class="nav-cta" id="request-cv" href="#chat" aria-haspopup="dialog">Request CV</a>
     </nav>
   </header>
 
@@ -64,22 +64,21 @@
           <h1><span class="hero-slide is-active">AI Automation.</span><span class="hero-slide">Systems Builder.</span><span class="hero-slide">Working systems.</span></h1>
         </div>
         <p class="hero-copy">I turn business problems into working digital systems—combining AI, workflow automation, APIs, data, UX, and hands-on engineering to design, build, test, and document practical systems.</p>
-        <div class="hero-cta">
-          <div class="methodology" aria-label="My methodology — BE EXCITED. BUILD. BREAK THINGS. DEBUG. LEARN.">
-            <ol class="principle-list">
-              <li class="principle-item"><span class="principle-icon" aria-hidden="true">🚀</span><span>BE EXCITED</span></li>
-              <li class="principle-item"><span class="principle-icon" aria-hidden="true">🛠️</span><span>BUILD</span></li>
-              <li class="principle-item"><span class="principle-icon" aria-hidden="true">💥</span><span>BREAK THINGS</span></li>
-              <li class="principle-item"><span class="principle-icon" aria-hidden="true">🐞</span><span>DEBUG</span></li>
-              <li class="principle-item"><span class="principle-icon" aria-hidden="true">💡</span><span>LEARN</span></li>
-            </ol>
-          </div>
-          <form class="hero-form" id="contact-form">
-            <div class="message-row">
-              <textarea name="message" placeholder="Message me..." aria-label="Your message" required></textarea>
-              <button class="send-message-btn" type="submit">Send message <span aria-hidden="true">↗</span></button>
+        <div class="hero-cta" id="chat">
+          <p class="chat-label">Chat with me</p>
+          <div class="chatbox" aria-label="Portfolio chat assistant">
+            <div class="chat-log" aria-live="polite"></div>
+            <div class="chat-starters" aria-label="Suggested questions">
+              <button type="button">What has Joma built?</button>
+              <button type="button">Tell me about the AI Agent Conference</button>
+              <button type="button">What is the Automation Lab?</button>
             </div>
-          </form>
+            <div class="chat-compose">
+              <input class="chat-input" type="text" maxlength="2000" placeholder="Ask about my systems, projects, or automation work..." aria-label="Ask the portfolio assistant">
+              <button class="chat-send" type="button">Ask ↗</button>
+            </div>
+            <p class="chat-disclaimer">Answers are generated from website content and may make mistakes. Messages are logged to improve the assistant.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -245,20 +244,7 @@
     <section class="contact" id="contact">
       <p>Available for full-time remote opportunities</p>
       <h2>Creative thinking. Technical follow-through. Ready when you are.</h2>
-      <div class="chatbox" aria-label="Portfolio chat assistant">
-        <div class="chat-log" aria-live="polite"></div>
-        <div class="chat-starters" aria-label="Suggested questions">
-          <button type="button">What has Joma built?</button>
-          <button type="button">Tell me about the AI Agent Conference</button>
-          <button type="button">What is the Automation Lab?</button>
-        </div>
-        <div class="chat-compose">
-          <input class="chat-input" type="text" maxlength="2000" placeholder="Ask about my systems, projects, or automation work..." aria-label="Ask the portfolio assistant">
-          <button class="chat-send" type="button">Ask ↗</button>
-        </div>
-        <p class="chat-disclaimer">Answers are generated from website content and may make mistakes. Messages are logged to improve the assistant.</p>
-      </div>
-      <a class="button primary" href="#contact-form">Put my skills to work</a>
+      <a class="button primary" href="#chat">Put my skills to work</a>
       <div class="contact-note">Based in the Philippines • Working without borders • Building what’s next</div>
     </section>
   </main>
