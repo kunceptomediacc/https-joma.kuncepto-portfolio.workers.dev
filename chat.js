@@ -65,11 +65,11 @@
           log.scrollTop = log.scrollHeight;
         }
       } else {
-        bubble('assistant', (data && data.message) || 'The chat assistant is unavailable right now — the contact form still works.');
+        bubble('assistant', (data && data.message) || 'The chat assistant is unavailable right now — please try again in a moment.');
       }
     } catch {
       pending.remove();
-      bubble('assistant', 'The chat assistant is offline right now — the contact form still works.');
+      bubble('assistant', 'The chat assistant is offline right now — please try again in a moment.');
     }
     busy = false;
     send.disabled = false;

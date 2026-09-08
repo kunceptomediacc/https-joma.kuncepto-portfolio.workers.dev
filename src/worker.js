@@ -344,7 +344,7 @@ async function siteChat(request, env) {
   }
 
   if (!env.N8N_CHAT_WEBHOOK_URL || !env.N8N_SHARED_SECRET) {
-    return json({ ok: false, message: "The chat assistant is warming up. The contact form still works." }, 503);
+    return json({ ok: false, message: "The chat assistant is warming up — please check back soon." }, 503);
   }
 
   let input;
@@ -397,7 +397,7 @@ async function siteChat(request, env) {
       sessionId,
     });
   } catch {
-    return json({ ok: false, message: "The chat assistant did not respond. The contact form still works." }, 502);
+    return json({ ok: false, message: "The chat assistant did not respond — please try again in a moment." }, 502);
   }
 }
 
