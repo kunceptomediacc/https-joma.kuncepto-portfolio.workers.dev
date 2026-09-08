@@ -18,6 +18,7 @@ $rootFiles = @(
   'hero.css',
   'reference-style.css',
   'script.js',
+  'chat.js',
   'favicon.ico',
   'og.png',
   'og-joma-avatar.png',

@@ -242,6 +242,162 @@ async function siteVisits(request, env) {
   return json({ ok: true, count: Number(metric?.value || 0) });
 }
 
+const EMBEDDING_MODEL = "@cf/baai/bge-small-en-v1.5";
+const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{6,64}$/;
+
+function gatewayAuthorized(request, env) {
+  const secret = env.N8N_SHARED_SECRET || "";
+  return Boolean(secret) && (request.headers.get("authorization") || "") === `Bearer ${secret}`;
+}
+
+async function ragUpsert(request, env) {
+  if (!gatewayAuthorized(request, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+  if (!env.AI || !env.VECTORIZE) return json({ ok: false, error: "RAG bindings are not configured on this worker." }, 503);
+
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body." }, 400);
+  }
+
+  const id = normalize(input.id).slice(0, 120);
+  const title = normalize(input.title).slice(0, 200);
+  const sourceUrl = normalize(input.url).slice(0, 500);
+  const content = normalize(input.content);
+
+  if (!id || !content) return json({ ok: false, error: "id and content are required." }, 400);
+  if (content.length > 6000) return json({ ok: false, error: "content exceeds 6,000 characters." }, 422);
+
+  const embedded = await env.AI.run(EMBEDDING_MODEL, { text: [content] });
+  const vector = embedded?.data?.[0];
+  if (!vector) return json({ ok: false, error: "Embedding failed." }, 502);
+
+  await env.DB.prepare(
+    "INSERT INTO knowledge_chunks (id, title, url, content, updated_at) VALUES (?1, ?2, ?3, ?4, datetime('now')) ON CONFLICT(id) DO UPDATE SET title = excluded.title, url = excluded.url, content = excluded.content, updated_at = datetime('now')"
+  ).bind(id, title, sourceUrl, content).run();
+
+  await env.VECTORIZE.upsert([{ id, values: vector, metadata: { title, url: sourceUrl } }]);
+  return json({ ok: true, id });
+}
+
+async function ragSearch(request, env) {
+  if (!gatewayAuthorized(request, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+  if (!env.AI || !env.VECTORIZE) return json({ ok: false, error: "RAG bindings are not configured on this worker." }, 503);
+
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body." }, 400);
+  }
+
+  const query = normalize(input.query).slice(0, 1000);
+  const topK = Math.min(Math.max(Number(input.topK) || 5, 1), 10);
+  if (!query) return json({ ok: false, error: "query is required." }, 400);
+
+  const embedded = await env.AI.run(EMBEDDING_MODEL, { text: [query] });
+  const vector = embedded?.data?.[0];
+  if (!vector) return json({ ok: false, error: "Embedding failed." }, 502);
+
+  const results = await env.VECTORIZE.query(vector, { topK, returnMetadata: "all" });
+  const matches = [];
+  for (const match of results?.matches || []) {
+    const row = await env.DB.prepare("SELECT id, title, url, content FROM knowledge_chunks WHERE id = ?1").bind(match.id).first();
+    if (row) matches.push({ ...row, score: match.score });
+  }
+  return json({ ok: true, matches });
+}
+
+async function chatSave(request, env) {
+  if (!gatewayAuthorized(request, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body." }, 400);
+  }
+
+  const sessionId = normalize(input.sessionId);
+  const role = normalize(input.role);
+  const message = normalize(input.message);
+
+  if (!SESSION_ID_PATTERN.test(sessionId)) return json({ ok: false, error: "Invalid sessionId." }, 422);
+  if (role !== "user" && role !== "assistant") return json({ ok: false, error: "Invalid role." }, 422);
+  if (!message || message.length > 4000) return json({ ok: false, error: "message must be between 1 and 4,000 characters." }, 422);
+
+  await env.DB.prepare(
+    "INSERT INTO chat_messages (session_id, role, message) VALUES (?1, ?2, ?3)"
+  ).bind(sessionId, role, message).run();
+  return json({ ok: true });
+}
+
+async function siteChat(request, env) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) {
+    return json({ ok: false, message: "This request was not accepted." }, 403);
+  }
+
+  if (!request.headers.get("content-type")?.includes("application/json")) {
+    return json({ ok: false, message: "Please use the website chat." }, 415);
+  }
+
+  if (!env.N8N_CHAT_WEBHOOK_URL || !env.N8N_SHARED_SECRET) {
+    return json({ ok: false, message: "The chat assistant is warming up. The contact form still works." }, 503);
+  }
+
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    return json({ ok: false, message: "The message could not be read." }, 400);
+  }
+
+  const message = normalize(input.message);
+  const sessionId = normalize(input.sessionId);
+
+  if (!message || message.length > 2000) {
+    return json({ ok: false, field: "message", message: "Please write between 1 and 2,000 characters." }, 422);
+  }
+  if (!SESSION_ID_PATTERN.test(sessionId)) {
+    return json({ ok: false, message: "Please refresh the page and try again." }, 422);
+  }
+
+  const sourceHash = await hashSource(request, env.CONTACT_HASH_SALT);
+  try {
+    const rate = await env.DB.prepare(
+      "INSERT INTO chat_rate (source_hash, window_start, hits) VALUES (?1, datetime('now'), 1) ON CONFLICT(source_hash) DO UPDATE SET hits = CASE WHEN chat_rate.window_start >= datetime('now', '-1 hour') THEN chat_rate.hits + 1 ELSE 1 END, window_start = CASE WHEN chat_rate.window_start >= datetime('now', '-1 hour') THEN chat_rate.window_start ELSE datetime('now') END RETURNING hits"
+    ).bind(sourceHash).first();
+    if ((rate?.hits || 0) > 20) {
+      return json({ ok: false, message: "You have reached the chat limit for this hour. Please try again later." }, 429, { "retry-after": "3600" });
+    }
+  } catch {
+    // chat_rate table not migrated yet — allow through rather than blocking the chat.
+  }
+
+  try {
+    const response = await fetch(env.N8N_CHAT_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-chatbot-gateway": env.N8N_SHARED_SECRET },
+      body: JSON.stringify({ message, sessionId }),
+      signal: AbortSignal.timeout(25000),
+    });
+    const data = await response.json();
+    if (!response.ok || !data || typeof data.answer !== "string" || !data.answer.trim()) {
+      throw new Error("Invalid chat response.");
+    }
+    return json({
+      ok: true,
+      answer: data.answer.trim().slice(0, 4000),
+      sources: Array.isArray(data.sources) ? data.sources.slice(0, 5) : [],
+      sessionId,
+    });
+  } catch {
+    return json({ ok: false, message: "The chat assistant did not respond. The contact form still works." }, 502);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -259,6 +415,21 @@ export default {
     }
     if (url.pathname === "/api/visits") {
       return siteVisits(request, env);
+    }
+    if (url.pathname === "/api/chat") {
+      if (request.method !== "POST") {
+        return json({ ok: false, message: "Method not allowed." }, 405, { allow: "POST" });
+      }
+      return siteChat(request, env);
+    }
+    if (url.pathname === "/api/rag/upsert" && request.method === "POST") {
+      return ragUpsert(request, env);
+    }
+    if (url.pathname === "/api/rag/search" && request.method === "POST") {
+      return ragSearch(request, env);
+    }
+    if (url.pathname === "/api/chat/save" && request.method === "POST") {
+      return chatSave(request, env);
     }
     const asset = await env.ASSETS.fetch(request);
     const headers = new Headers(asset.headers);

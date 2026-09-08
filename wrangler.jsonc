@@ -15,5 +15,14 @@
       "database_id": "c46947ad-4d14-4716-8ed9-c84e2d893e46",
       "migrations_dir": "migrations"
     }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "website-knowledge"
+    }
   ]
 }
