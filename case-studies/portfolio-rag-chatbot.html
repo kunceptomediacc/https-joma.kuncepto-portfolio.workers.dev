@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Case study: a RAG chatbot that answers questions about Joma straight from website content — Cloudflare Worker gateway, self-hosted n8n, Workers AI embeddings, Vectorize, and Groq.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#0b0c0f">
+  <meta name="author" content="Joma Echavez">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_PH">
+  <meta property="og:site_name" content="Kuncepto">
+  <meta property="og:title" content="Portfolio RAG chatbot — Case study | Joma Echavez">
+  <meta property="og:description" content="The chatbox in the hero of this site: a grounded RAG assistant built on a Cloudflare Worker gateway, self-hosted n8n, Vectorize, and Groq.">
+  <meta property="og:url" content="https://joma.kuncepto-portfolio.workers.dev/case-studies/portfolio-rag-chatbot.html">
+  <meta property="og:image" content="https://joma.kuncepto-portfolio.workers.dev/og-joma-avatar.png">
+  <title>Portfolio RAG chatbot — Case study | Joma Echavez</title>
+  <link rel="canonical" href="https://joma.kuncepto-portfolio.workers.dev/case-studies/portfolio-rag-chatbot.html">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="stylesheet" href="../style.css?v=20260907a">
+  <link rel="stylesheet" href="../hero.css?v=20260908a">
+  <link rel="stylesheet" href="../reference-style.css?v=20260908b">
+  <link rel="stylesheet" href="case-studies.css?v=20260907a">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../index.html#top" aria-label="Kuncepto by Joma Echavez — home">
+      <img src="../assets/img/logo.webp" alt="Kuncepto" width="1916" height="657" decoding="async">
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Primary navigation">
+      <a href="../index.html#skills">Skills</a><a href="../index.html#lab">Automation Lab</a><a href="../index.html#portfolio">Portfolio</a><a class="nav-cta" href="../index.html#chat">Request CV</a>
+    </nav>
+  </header>
+
+  <main id="main" class="case-study">
+    <div class="case-head">
+      <p class="case-eyebrow">Case study · 2026 · Live on this site</p>
+      <h1 class="case-title">A chatbot that answers questions about me — grounded in this website, not in guesses.</h1>
+      <p class="case-lead">The chatbox in the hero of this homepage is a retrieval-augmented assistant: a Cloudflare Worker gateway in front of self-hosted n8n, vector search over this site's own content, and a Groq-hosted LLM that is only allowed to answer from what was retrieved. It was built, broken, debugged, and then left running — answering visitors right now.</p>
+      <div class="case-tags"><span>Cloudflare Workers</span><span>Vectorize</span><span>Workers AI</span><span>D1</span><span>n8n</span><span>RAG</span><span>Groq</span><span>Cloudflare Tunnel</span></div>
+      <p class="case-doc-note"><strong>Hands-on personal project.</strong> This is self-study, not paid client work — and it documents a live system, not a mockup. The chatbox at the top of the homepage is this exact pipeline.</p>
+    </div>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>01</b><span>Business problem</span></h2>
+      <div class="cs-body">
+        <p>A portfolio is a one-way brochure: visitors read, but cannot ask. The information they want — what was built, how it works, what the automation lab actually contains — is scattered across sections, and the old contact form only answered one question at a time, by email, hours later.</p>
+        <p>I wanted the opposite: a visitor types <em>"What is the AI Agent Conference?"</em> and gets a real answer immediately — from my content, without inventing facts or leaking an API key into the browser.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>02</b><span>Goal &amp; acceptance criteria</span></h2>
+      <div class="cs-body">
+        <p>Goal: a public chat widget that answers questions about me using only this website's content, safely and cheaply.</p>
+        <ul>
+          <li>Answers must come from retrieved site content — the assistant admits when it does not know.</li>
+          <li>Prompt-injection attempts must not produce invented facts, prices, or claims.</li>
+          <li>No secret ever reaches the browser; every privileged call is server-side.</li>
+          <li>Abuse-resistant: per-visitor rate limit, message length cap, session validation.</li>
+          <li>Graceful degradation — if any part is down, the site stays fully usable.</li>
+          <li>Free-tier friendly: Workers free plan, Workers AI neurons, Groq's free developer tier.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>03</b><span>Workflow diagram</span></h2>
+      <div class="cs-body">
+        <pre class="cs-code"><code>VISITOR (homepage hero)
+   |  POST /api/chat  { message, sessionId }
+   v
+PORTFOLIO WORKER  (public gateway — this site's worker)
+   |  origin + content-type checks, message ≤ 2000 chars,
+   |  sessionId pattern, rate limit 20/h per salted IP hash,
+   |  25s timeout, Bearer gateway header
+   v
+CLOUDFLARE TUNNEL  (public HTTPS → my Windows PC)
+   v
+n8n  (self-hosted, Docker)
+   |  Webhook → Normalize → Valid?
+   |  → Search Knowledge  ─────►  CHATBOT-API WORKER (private RAG gateway)
+   |                                 |  Workers AI embeddings (384-d)
+   |                                 |  Vectorize similarity search
+   |                                 |  D1 chunk lookup
+   |  → Build RAG Context
+   |  → Basic LLM Chain  ────────►  Groq chat model
+   |  → Respond to Webhook { reply }
+   v
+PORTFOLIO WORKER  (adapts `reply` → `answer`, trims, sanitizes)
+   v
+BROWSER  (rendered as text — never innerHTML)</code></pre>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>04</b><span>Input payload</span></h2>
+      <div class="cs-body">
+        <p>The browser only ever sends two fields. The session ID is a stable per-tab UUID kept in <code>sessionStorage</code> and must match a strict pattern before anything else happens.</p>
+        <pre class="cs-code"><code>{
+  "message": "What is the AI Agent Conference?",
+  "sessionId": "3f8a2c1e-9b4d-4e7a-8c2f-1d5b9a7e6c40"
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>05</b><span>Node-by-node data flow</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Stage</th><th>Role</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>Portfolio Worker</td><td>Public gateway</td><td>Validates origin, content type, message length, session format; rate-limits 20 msgs/hour per salted IP hash; 25s timeout to n8n.</td></tr>
+            <tr><td>Cloudflare Tunnel</td><td>Bridge</td><td>Exposes only the local n8n endpoint over public HTTPS — never the n8n editor.</td></tr>
+            <tr><td>n8n Webhook</td><td>Entry</td><td>Receives <code>{message, sessionId}</code> plus the gateway header; normalizes fields.</td></tr>
+            <tr><td>Search Knowledge</td><td>Retrieval</td><td>Calls the private RAG gateway: embeds the question (Workers AI, 384-d), queries Vectorize (cosine), joins chunk text from D1.</td></tr>
+            <tr><td>Build RAG Context</td><td>Grounding</td><td>Formats the retrieved chunks — title, URL, content — into the prompt context block.</td></tr>
+            <tr><td>Basic LLM Chain</td><td>Generation</td><td>Groq-hosted model, low temperature, rules: answer only from context, say when information is missing, never claim actions happened.</td></tr>
+            <tr><td>Respond to Webhook</td><td>Reply</td><td>Returns <code>{reply}</code> to the gateway.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>06</b><span>Credentials &amp; authentication</span></h2>
+      <div class="cs-body">
+        <div class="cs-cols">
+          <div><h4>Shared gateway secret</h4><p>One long random value stored as a Worker secret and as an n8n header — both directions of the n8n ↔ Cloudflare traffic authenticate with it. It has never been in frontend code.</p></div>
+          <div><h4>Webhook URL</h4><p>The n8n endpoint URL is also a Worker secret — nothing about the private topology is visible in the page source.</p></div>
+          <div><h4>Browser</h4><p>The browser holds zero keys. It posts two JSON fields to same-origin <code>/api/chat</code> and nothing else.</p></div>
+          <div><h4>Secrets hygiene</h4><p>All values live in Cloudflare secrets / n8n credentials; nothing committed to git.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>07</b><span>API &amp; model details</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Piece</th><th>Choice</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Embeddings</td><td>Workers AI <code>@cf/baai/bge-small-en-v1.5</code> (384-d)</td><td>Runs inside Cloudflare, no extra key, free Neuron allowance.</td></tr>
+            <tr><td>Vector store</td><td>Vectorize, 384 dimensions, cosine</td><td>Native to Workers, sized for a small corpus.</td></tr>
+            <tr><td>Chunk store</td><td>D1 (SQLite)</td><td>Readable text next to the vectors; one row per chunk.</td></tr>
+            <tr><td>LLM</td><td>Groq chat model via n8n Basic LLM Chain</td><td>Fast responses on a free developer tier; temperature kept low for factual answering.</td></tr>
+            <tr><td>Orchestration</td><td>Self-hosted n8n (Docker)</td><td>The whole portfolio story in one feature: the site's chat runs on my own automation stack.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>08</b><span>Transformations</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li><strong>Contract adaptation:</strong> n8n returns <code>{reply}</code>; the gateway normalizes it (accepting the earlier <code>answer</code> shape too) before responding to the browser.</li>
+          <li><strong>Output hygiene:</strong> the answer is trimmed and capped at 4,000 characters; the sources array is capped at five.</li>
+          <li><strong>Input hygiene:</strong> messages trimmed and capped at 2,000 characters; session IDs must match <code>^[A-Za-z0-9_-]{6,64}$</code>.</li>
+          <li><strong>Render safety:</strong> the UI writes with <code>textContent</code> only — no HTML from the model can ever execute.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>09</b><span>Expected output</span></h2>
+      <div class="cs-body">
+        <pre class="cs-code"><code>{
+  "ok": true,
+  "answer": "The AI Agent Conference is a flagship project…",
+  "sources": [],
+  "sessionId": "3f8a2c1e-…"
+}</code></pre>
+        <p>Failure shapes are equally explicit: <code>{ok:false, message:"…"}</code> with a 4xx/5xx status and a human-readable message the widget can show as-is.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>10</b><span>Deliberate failure tests</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>Test</th><th>Expected</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>POST /api/rag/search without the gateway header</td><td>401</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Chat request from a foreign origin</td><td>403</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Session ID shorter than the pattern</td><td>422</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Message over 2,000 characters</td><td>422</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Chat beyond 20 messages in an hour</td><td>429 + retry-after</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>n8n unreachable (tunnel down)</td><td>502 + friendly fallback</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Response without a usable <code>reply</code></td><td>502, never a blank bubble</td><td class="cs-outcome-pass">Pass</td></tr>
+            <tr><td>Model asked to invent a price (live)</td><td>Refusal grounded in rules</td><td class="cs-outcome-pass">Pass</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>11</b><span>Actual errors</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>#</th><th>Symptom</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>Webhook answered <code>404 — "The requested webhook POST site-chat is not registered"</code></td><td>n8n</td></tr>
+            <tr><td>E2</td><td>RAG search returned <code>Unauthorized</code> even with the header set</td><td>Portfolio Worker</td></tr>
+            <tr><td>E3</td><td>Gateway stayed on its "warming up" response with secrets supposedly configured</td><td>Portfolio Worker</td></tr>
+            <tr><td>E4</td><td>A deployed gateway that silently could never reach n8n at all</td><td>Architecture</td></tr>
+            <tr><td>E5</td><td>Contract mismatch: gateway expected <code>answer</code>, n8n returns <code>reply</code></td><td>Integration</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>12</b><span>Root causes</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>#</th><th>Root cause</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>The chatbot workflow was built but never <strong>activated</strong> — n8n only serves production URLs from active workflows.</td></tr>
+            <tr><td>E2</td><td>The secret existed in the dashboard but the running Worker did not have it — the wrong resource had been configured.</td></tr>
+            <tr><td>E3</td><td>Same class as E2: a secret missing at runtime makes the gateway refuse early by design, before touching n8n.</td></tr>
+            <tr><td>E4</td><td>n8n listens on <code>localhost:5678</code> inside Docker on my PC — the Cloudflare edge physically cannot connect to another machine's localhost.</td></tr>
+            <tr><td>E5</td><td>Two halves of the system were specified separately; the response field name drifted between them. Caught by an integration test before it reached visitors.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>13</b><span>Fixes</span></h2>
+      <div class="cs-body">
+        <table class="cs-table">
+          <thead><tr><th>#</th><th>Fix</th><th>Why it works</th></tr></thead>
+          <tbody>
+            <tr><td>E1</td><td>Activate the workflow (editor toggle).</td><td>n8n registers production webhook routes only for active workflows.</td></tr>
+            <tr><td>E2–E3</td><td>Upload both secrets directly to the Worker (<code>wrangler secret put</code>). Secrets survive deploys.</td><td>The gateway's early-exit check now passes and the header matches on both sides.</td></tr>
+            <tr><td>E4</td><td>Cloudflare Tunnel: a local <code>cloudflared</code> process exposes only the n8n endpoint over public HTTPS; the Worker secret points at it.</td><td>Outbound tunnel connection needs no port forwarding; the editor UI stays private.</td></tr>
+            <tr><td>E5</td><td>Gateway accepts <code>reply</code> first with <code>answer</code> as fallback.</td><td>Adapter at the boundary absorbs contract drift; both shapes tested.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>14</b><span>Final workflow — live</span></h2>
+      <div class="cs-body">
+        <p>The system currently answering on the homepage: knowledge base of <strong>10 chunks from this site's homepage</strong> (the featured systems, the lab, the design archive), a two-gateway layout — public chat gateway on this Worker, private RAG gateway on a second Worker — and the full guardrail suite passing live: grounded answer, honest "I don't know", injection refused.</p>
+        <p class="cs-lead">Visitor → Worker gateway → Tunnel → n8n → Vectorize search → Groq → Worker → chatbox</p>
+        <p>Known gaps, kept on purpose: the corpus is one page deep so far; chat-message logging is not yet recording (the save leg is next); the tunnel URL is ephemeral until a named tunnel replaces it.</p>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>15</b><span>Lessons learned</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li>The Cloudflare edge cannot reach <code>localhost</code> — "it works on my machine" is a whole deployment phase when the server is your desktop.</li>
+          <li>Contract mismatches between two separately-built halves only surface in end-to-end tests. Mock tests caught the <code>reply</code>/<code>answer</code> drift before a visitor did.</li>
+          <li>Missing secrets should fail loud and early — the gateway's "warming up" response made the diagnosis a one-look job instead of a mystery.</li>
+          <li>Grounding rules work: the model refused to invent pricing and admitted not knowing a pizza preference, because retrieval had nothing to offer.</li>
+          <li>Once again: valid workflow JSON is not automatically a correct automation — the pipeline only became real after it was broken on purpose.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cs-section">
+      <h2 class="cs-h2"><b>16</b><span>Next version</span></h2>
+      <div class="cs-body">
+        <ul>
+          <li>Ingest the <strong>case studies and subpages</strong> so answers go deeper than the homepage.</li>
+          <li>Wire the <strong>chat-history save leg</strong> and include the last few turns in the prompt for follow-up questions.</li>
+          <li>Publish <strong>sources</strong> in the response and footnote them in the widget.</li>
+          <li>Replace the quick tunnel with a <strong>named Cloudflare Tunnel</strong> (or move n8n to a VPS) for 24/7 availability.</li>
+          <li>Upgrade Basic LLM Chain to an <strong>AI Agent</strong> with tools — availability questions, CV requests — with the human checkpoint pattern from the Conference.</li>
+        </ul>
+      </div>
+    </section>
+
+    <a class="cs-back" href="../index.html#portfolio">← Back to portfolio</a>
+  </main>
+  <footer>
+    <span>© 2026 Joma Echavez / Kuncepto</span>
+    <span>Designed from the Kuncepto archive</span>
+  </footer>
+  <script src="../script.js?v=20260907a" defer></script>
+</body>
+</html>

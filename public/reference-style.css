@@ -350,6 +350,8 @@
 .chat-send:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(255, 196, 0, .2); }
 .chat-send:disabled { cursor: wait; opacity: .72; transform: none; box-shadow: none; }
 .chat-disclaimer { margin: .65rem .15rem 0; font-size: .7rem; color: #6e7681; }
+.chat-disclaimer a { color: #ffc400; text-decoration: none; }
+.chat-disclaimer a:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
   .chatbox { padding: .8rem; }
